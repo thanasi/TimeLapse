@@ -39,7 +39,10 @@ Author:  A G Athanassiadis
 bool capturing = false;
 
 // number of photos to take
-int Ncap = 1;
+int max_photos = 1;
+
+// number of photos taken so far
+int num_photos = 0;
 
 // autofocus before taking image?
 bool af_enabled = false;
@@ -56,11 +59,11 @@ void setup() {
 
 	pinMode(LED_PIN, OUTPUT);
 	pinMode(SHUTTER_PIN, OUTPUT);
-  pinMode(AF_PIN, OUTPUT);
+    pinMode(AF_PIN, OUTPUT);
 
 	digitalWrite(LED_PIN, LOW);
 	digitalWrite(SHUTTER_PIN, LOW);
-  digitalWrite(AF_PIN, LOW);
+    digitalWrite(AF_PIN, LOW);
   
 
 	Serial.begin(115200);
@@ -70,12 +73,12 @@ void setup() {
 	shell.attach(Serial);
 
 	shell.addCommand(F("file?"), showID);
-  shell.addCommand(F("trigger"), triggerSinglePhoto);
+    shell.addCommand(F("trigger"), triggerSinglePhoto);
 	shell.addCommand(F("start"), startTimeLapse);
-  shell.addCommand(F("cancel"), stopTimeLapse);
+    shell.addCommand(F("cancel"), stopTimeLapse);
 	shell.addCommand(F("set_count"), setPhotoCount);
-  shell.addCommand(F("set_dur"), setPhotoDuration);
-  shell.addCommand(F("set_spacing"), setPhotoSpacing);
+    shell.addCommand(F("set_dur"), setPhotoDuration);
+    shell.addCommand(F("set_spacing"), setPhotoSpacing);
 
 
 	shell.println();
@@ -183,20 +186,23 @@ int setPhotoSpacing(int argc, char **argv)
 int triggerSinglePhoto(int argc, char **argv)
 {
   if(af_enabled){
-   // trigger autofocus before triggering photo
+   pulseAF();
   }
-  // trigger photo pin briefly
+  pulseShutter();
   
   return EXIT_SUCCESS;
 }
+
 /////////////////////////////////////////////////////////////////////////////////
 // start time lapse
 int startTimeLapse(int argc, char **argv)
 {
   capturing = true;
+  num_cap = 0;
   // reset Chrono timer
   return EXIT_SUCCESS;
 }
+
 /////////////////////////////////////////////////////////////////////////////////
 // stop time lapse
 int stopTimeLapse(int argc, char **argv)
