@@ -50,7 +50,8 @@ bool af_enabled = false;
 // timing between photos (seconds)
 float photo_interval_s = 1;
 
-
+// timer for photos
+Chrono photoTimer = Chrono();
 
 /**********************
  Setup
@@ -99,6 +100,14 @@ void loop() {
   if(capturing){
     blinkLED_nb();
     // run capture routine, using Chrono tracker to track timing between shots
+     if photoTimer.metro(photo_interval_s*1000)
+     {
+      triggerSinglePhoto(0,NULL);
+      incrCapCount();
+     }
+
+	  
+	  
   }
   
 }
@@ -147,7 +156,7 @@ int badArgCount( char * cmdName )
 {
 	shell.print(cmdName);
 	shell.println(F(": bad arg count"));
-	return -1;
+	return EXIT_FAILURE;
 }
 
 
@@ -163,51 +172,84 @@ int showID(int argc=0, char**argv=NULL)
 // set number of photos to take (or 0 for unlimited)
 int setPhotoCount(int argc, char **argv)
 {
-  return EXIT_SUCCESS;
+  if (argc==2)
+  {
+	  if (!capturing)
+	  {
+		  max_photos = atoi(argv[1]);
+	  }
+	  else
+	  {
+		shell.println(F( "Cannot update photo count mid-capture"));
+
+	  }
+	  
+	  return EXIT_SUCCESS;
+	  
+  }
+  return badArgCount(argv[0]);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////////
 // set time interval to take photos for (by setting total number of photos)
-int setPhotoCount(int argc, char **argv)
+int setPhotoInterval(int argc, char **argv)
 {
-  return EXIT_SUCCESS;
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-// set time interval between photos
-int setPhotoSpacing(int argc, char **argv)
-{
-  return EXIT_SUCCESS;
+  if (argc==2)
+  {
+	  if (!capturing){
+	  photo_interval_s = atof(argv[1]);
+	  }
+	  else
+	  {
+		shell.println(F( "Cannot update photo interval mid-capture"));
+		
+	  }
+	  return EXIT_SUCCESS;
+  }
+  return badArgCount(argv[0]);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 // trigger single photo
-int triggerSinglePhoto(int argc, char **argv)
+int triggerSinglePhoto(int argc=0, char** argv=NULL)
 {
-  if(af_enabled){
-   pulseAF();
-  }
+
+  if (af_enabled) { pulseAF(); }
+	
   pulseShutter();
-  
+ 
   return EXIT_SUCCESS;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
+// increment capture count
+void incrCapCount()
+{
+	num_photos += 1;
+	if (num_photos==max_photos) 
+	{
+		stopTimeLapse(0,NULL);
+	}
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////
 // start time lapse
-int startTimeLapse(int argc, char **argv)
+int startTimeLapse(int argc=1, char **argv=NULL)
 {
   capturing = true;
   num_cap = 0;
-  // reset Chrono timer
+  photoTimer.restart();
+  triggerSinglePhoto(0,NULL);
+  incrCapCount();
   return EXIT_SUCCESS;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 // stop time lapse
-int stopTimeLapse(int argc, char **argv)
+int stopTimeLapse(int argc=1, char **argv=NULL)
 {
-  // interrupt Chrono timer?
   capturing = false;
   return EXIT_SUCCESS;
 }
